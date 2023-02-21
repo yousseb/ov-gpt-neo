@@ -1,3 +1,6 @@
+#!/usr/bin/env python
+# coding=utf-8
+
 """
 Based on https://github.com/openvinotoolkit/open_model_zoo/blob/master/demos/gpt2_text_prediction_demo/python/gpt2_text_prediction_demo.py
      and https://github.com/openvinotoolkit/openvino_notebooks/blob/main/notebooks/223-gpt2-text-prediction/223-gpt2-text-prediction.ipynb
@@ -15,7 +18,14 @@ from transformers import GPT2Tokenizer, GPT2LMHeadModel
 
 
 class GPTNeoConfig:
-    model: str = Path('model') / Path('gpt-neo-1.3B.xml')
+    neo_model: str = 'gpt-neo-125M'
+    # neo_model = 'gpt-neo-1.3B'
+    # neo_model = 'gpt-neo-2.7B'
+    compressed_model = str(Path(f'./quant-{neo_model}'))
+    uncompressed_model = f'EleutherAI/{neo_model}'
+    use_compressed_model: bool = False
+
+    model: str = Path('model') / Path(f'{neo_model}.xml')
     device: str = 'CPU'           # 'CPU', 'GPU', 'Auto', etc..
     dynamic_shape: bool = True    # False is broken for now.
     top_k: int = 200              # Number of tokens with the highest probability which will be kept for generation
@@ -29,7 +39,10 @@ class GPTNeo:
         self.config = config
 
         # create tokenizer
-        self.tokenizer = GPT2Tokenizer.from_pretrained("EleutherAI/gpt-neo-1.3B")
+        if config.use_compressed_model:
+            self.tokenizer = GPT2Tokenizer.from_pretrained(config.compressed_model)
+        else:
+            self.tokenizer = GPT2Tokenizer.from_pretrained(config.uncompressed_model)
         self.eos_token_id = self.tokenizer.eos_token_id
         log.debug('Tokenizer configured')
 
